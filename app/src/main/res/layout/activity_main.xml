@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="#000000"
+    tools:context=".MainActivity">
+
+    <!-- Círculo con ícono visible al inicio -->
+    <FrameLayout
+        android:id="@+id/frameIcon"
+        android:layout_width="160dp"
+        android:layout_height="160dp"
+        android:background="@drawable/bg_circle_dark_purple"
+        android:gravity="center"
+        android:layout_marginBottom="24dp">
+
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/camera"
+            android:layout_marginStart="47dp"
+            android:layout_marginTop="47dp"
+            android:contentDescription="Camera icon" />
+    </FrameLayout>
+
+        <androidx.camera.view.PreviewView
+            android:id="@+id/previewView"
+            android:layout_width="220dp"
+            android:layout_height="220dp"
+            android:layout_marginBottom="24dp"
+            android:background="@drawable/bg_circle_dark_purple"
+            android:scaleType="fitCenter" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tap the button below to start emotion detection"
+        android:textColor="#BDBDBD"
+        android:textSize="14sp"
+        android:layout_marginBottom="24dp" />
+
+    <Button
+        android:id="@+id/btnDetectar"
+        android:layout_width="220dp"
+        android:layout_height="wrap_content"
+        android:text="Start Scan"
+        android:textColor="@color/black"
+        android:drawableLeft="@drawable/btn_camera"
+        android:background="@drawable/gradient_button" />
+
+</LinearLayout>
