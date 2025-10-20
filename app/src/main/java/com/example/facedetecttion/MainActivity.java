@@ -220,6 +220,8 @@ public class MainActivity extends AppCompatActivity {
         stopCamera();
     }
 
+    //hola
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
