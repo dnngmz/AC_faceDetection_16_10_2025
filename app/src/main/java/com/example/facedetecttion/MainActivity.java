@@ -2,17 +2,16 @@ package com.example.facedetecttion;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.media.Image;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.View;
 import android.widget.Button;
-import android.widget.Toast;
+import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -32,6 +31,7 @@ import com.google.mlkit.vision.face.FaceDetection;
 import com.google.mlkit.vision.face.FaceDetector;
 import com.google.mlkit.vision.face.FaceDetectorOptions;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -44,68 +44,100 @@ public class MainActivity extends AppCompatActivity {
     private ExecutorService cameraExecutor;
     private boolean detectar = false;
 
-    private EmocionReceiver emocionReceiver = new EmocionReceiver();
+    private Button btnDetectar;
+    private TextView tvEmocion;
+    private FrameLayout emojiContainer;
+
+    private List<String> emojiSonrientes = Arrays.asList("😄", "😂", "🥳", "😁");
+    private List<String> emojiSerios = Arrays.asList("😐", "😑", "😶", "🤨");
+    private List<String> emojiNeutrales = Arrays.asList("🙂", "😌", "😏");
+
+    private EmocionReceiver emocionReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         previewView = findViewById(R.id.previewView);
-        Button btnDetectar = findViewById(R.id.btnDetectar);
+        btnDetectar = findViewById(R.id.btnDetectar);
+        tvEmocion = findViewById(R.id.tvEmocion);
+        emojiContainer = findViewById(R.id.emojiContainer);
 
         cameraExecutor = Executors.newSingleThreadExecutor();
 
+        emocionReceiver = new EmocionReceiver(tvEmocion, emojiContainer, emojiSonrientes, emojiSerios, emojiNeutrales);
+
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                == PackageManager.PERMISSION_GRANTED) {
-            startCamera();
-        } else {
+                != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, 100);
         }
 
-        btnDetectar.setOnClickListener(v -> {
-            detectar = !detectar;
-            Toast.makeText(this,
-                    detectar ? "Detección activada" : "Detección detenida",
-                    Toast.LENGTH_SHORT).show();
+        btnDetectar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                detectar = !detectar;
+
+                if (detectar) {
+                    previewView.setVisibility(View.VISIBLE);
+                    startCamera();
+                    btnDetectar.setText("Stop Scan");
+                } else {
+                    stopCamera();
+                    previewView.setVisibility(View.GONE);
+                    btnDetectar.setText("Start Scan");
+                }
+            }
         });
     }
 
     private void startCamera() {
-        ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(this);
-        cameraProviderFuture.addListener(() -> {
-            try {
-                cameraProvider = cameraProviderFuture.get();
+        final ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(this);
 
-                Preview preview = new Preview.Builder().build();
-                CameraSelector cameraSelector = new CameraSelector.Builder()
-                        .requireLensFacing(CameraSelector.LENS_FACING_FRONT)
-                        .build();
+        cameraProviderFuture.addListener(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    cameraProvider = cameraProviderFuture.get();
 
-                preview.setSurfaceProvider(previewView.getSurfaceProvider());
+                    Preview preview = new Preview.Builder().build();
+                    CameraSelector cameraSelector = new CameraSelector.Builder()
+                            .requireLensFacing(CameraSelector.LENS_FACING_FRONT)
+                            .build();
 
-                ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .build();
+                    preview.setSurfaceProvider(previewView.getSurfaceProvider());
 
-                imageAnalysis.setAnalyzer(cameraExecutor, imageProxy -> {
-                    if (detectar) {
-                        analizarImagen(imageProxy);
-                    } else {
-                        imageProxy.close();
-                    }
-                });
+                    ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
+                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                            .build();
 
-                cameraProvider.unbindAll();
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalysis);
+                    imageAnalysis.setAnalyzer(cameraExecutor, new ImageAnalysis.Analyzer() {
+                        @Override
+                        public void analyze(@NonNull ImageProxy imageProxy) {
+                            if (detectar) {
+                                analizarImagen(imageProxy);
+                            } else {
+                                imageProxy.close();
+                            }
+                        }
+                    });
 
-            } catch (ExecutionException | InterruptedException e) {
-                e.printStackTrace();
+                    cameraProvider.unbindAll();
+                    cameraProvider.bindToLifecycle(MainActivity.this, cameraSelector, preview, imageAnalysis);
+
+                } catch (ExecutionException | InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }, ContextCompat.getMainExecutor(this));
     }
 
+    private void stopCamera() {
+        if (cameraProvider != null) cameraProvider.unbindAll();
+    }
+
     @SuppressLint("UnsafeOptInUsageError")
-    private void analizarImagen(ImageProxy imageProxy) {
+    private void analizarImagen(final ImageProxy imageProxy) {
         Image mediaImage = imageProxy.getImage();
         if (mediaImage != null) {
             InputImage image = InputImage.fromMediaImage(mediaImage, imageProxy.getImageInfo().getRotationDegrees());
@@ -118,19 +150,34 @@ public class MainActivity extends AppCompatActivity {
             FaceDetector detector = FaceDetection.getClient(options);
 
             detector.process(image)
-                    .addOnSuccessListener(faces -> procesarRostros(faces))
-                    .addOnFailureListener(Throwable::printStackTrace)
-                    .addOnCompleteListener(task -> imageProxy.close());
+                    .addOnSuccessListener(new com.google.android.gms.tasks.OnSuccessListener<List<Face>>() {
+                        @Override
+                        public void onSuccess(List<Face> faces) {
+                            procesarRostros(faces);
+                        }
+                    })
+
+                    .addOnFailureListener(new com.google.android.gms.tasks.OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            e.printStackTrace();
+                        }
+                    })
+
+                    .addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener<List<Face>>() {
+                        @Override
+                        public void onComplete(@NonNull com.google.android.gms.tasks.Task<List<Face>> task) {
+                            imageProxy.close();
+                        }
+                    });
+
         } else {
             imageProxy.close();
         }
     }
 
     private void procesarRostros(List<Face> faces) {
-        if (faces.isEmpty()) {
-            Log.d("DETECCION", "No hay rostros detectados");
-            return;
-        }
+        if (faces.isEmpty()) return;
 
         for (Face face : faces) {
             Float probSonrisa = face.getSmilingProbability();
@@ -143,10 +190,6 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     emocion = "Neutral 🙂";
                 }
-
-                Log.d("EMOCION", "Emoción: " + emocion);
-
-                // Enviar un broadcast
 
                 Intent intent = new Intent("com.example.emociondetector.EMOCION_DETECTADA");
                 intent.setPackage(getPackageName());
@@ -174,24 +217,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         cameraExecutor.shutdown();
+        stopCamera();
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == 100 && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            startCamera();
-        } else {
-            Toast.makeText(this, "Permiso de cámara denegado", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    // BroadcastReceiver interno
-    public static class EmocionReceiver extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String emocion = intent.getStringExtra("emocion");
-            Toast.makeText(context, "Emoción detectada: " + emocion, Toast.LENGTH_SHORT).show();
-        }
     }
 }

@@ -8,36 +8,59 @@
     android:background="#000000"
     tools:context=".MainActivity">
 
-    <!-- Círculo con ícono visible al inicio -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Emotion detector"
+        android:fontFamily="@font/moghul"
+        android:textColor="#FFFFFF"
+        android:textSize="40sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginTop="60dp"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/tvEmocion"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Presiona Start Scan"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:gravity="center"
+        android:layout_marginBottom="24dp" />
+
     <FrameLayout
         android:id="@+id/frameIcon"
-        android:layout_width="160dp"
-        android:layout_height="160dp"
+        android:layout_width="220dp"
+        android:layout_height="220dp"
         android:background="@drawable/bg_circle_dark_purple"
         android:gravity="center"
         android:layout_marginBottom="24dp">
 
         <ImageView
+            android:id="@+id/iconCamera"
             android:layout_width="64dp"
             android:layout_height="64dp"
-            android:src="@drawable/camera"
-            android:layout_marginStart="47dp"
-            android:layout_marginTop="47dp"
-            android:contentDescription="Camera icon" />
-    </FrameLayout>
+            android:contentDescription="Camera icon"
+            android:layout_marginStart="75dp"
+            android:layout_marginTop="75dp"
+            android:src="@drawable/camera" />
 
         <androidx.camera.view.PreviewView
             android:id="@+id/previewView"
-            android:layout_width="220dp"
-            android:layout_height="220dp"
-            android:layout_marginBottom="24dp"
-            android:background="@drawable/bg_circle_dark_purple"
-            android:scaleType="fitCenter" />
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:visibility="gone"
+            android:background="@android:color/transparent" />
+    </FrameLayout>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Tap the button below to start emotion detection"
+        android:textAlignment="center"
+        android:text="Presiona el botón para empezar a detectar emociones"
         android:textColor="#BDBDBD"
         android:textSize="14sp"
         android:layout_marginBottom="24dp" />
@@ -48,7 +71,14 @@
         android:layout_height="wrap_content"
         android:text="Start Scan"
         android:textColor="@color/black"
-        android:drawableLeft="@drawable/btn_camera"
+        android:drawableLeft="@drawable/btn_cam"
         android:background="@drawable/gradient_button" />
+
+    <FrameLayout
+        android:id="@+id/emojiContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="false"
+        android:focusable="false" />
 
 </LinearLayout>
